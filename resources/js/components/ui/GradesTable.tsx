@@ -19,7 +19,7 @@ export default function GradesTable({ term, grades }: GradesTableProps) {
           <thead className="bg-gray-100 dark:bg-neutral-800">
             <tr>
                 <th className="px-4 py-2 w-48">Subject Code</th>
-              <th className="px-4 py-2 w-48">Subject</th>
+              <th className="px-4 py-2 w-48">Subject Name</th>
               <th className="px-4 py-2 w-24">Grade Type</th>
               <th className="px-4 py-2 w-24">Grade</th>
               <th className="px-4 py-2 w-24">Credits</th>

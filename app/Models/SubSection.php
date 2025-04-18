@@ -14,5 +14,12 @@ class SubSection extends Model
     {
         return $this->belongsTo(Subject::class, 'SUB_INDEX', 'SUB_INDEX');
     }
-
+    public function roomAssigns()
+    {
+        return $this->hasMany(RoomAssign::class, 'SUB_SEC_INDEX', 'SUB_SEC_INDEX');
+    }
+    public function facultyLoads()
+    {
+        return $this->hasMany(FacultyLoad::class, 'SUB_SEC_INDEX', 'SUB_SEC_INDEX');
+    }
 }
