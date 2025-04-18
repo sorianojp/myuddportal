@@ -18,12 +18,15 @@ class SubjectLoadController extends Controller
             ->join('E_SUB_SECTION as s', 'e.SUB_SEC_INDEX', '=', 's.SUB_SEC_INDEX')
             ->join('SUBJECT as sub', 's.SUB_INDEX', '=', 'sub.SUB_INDEX')
             ->leftJoin('E_ROOM_ASSIGN as sched', 's.SUB_SEC_INDEX', '=', 'sched.SUB_SEC_INDEX')
+            ->leftJoin('E_ROOM_DETAIL as r', 'sched.ROOM_INDEX', '=', 'r.ROOM_INDEX')
+            ->leftJoin('E_ROOM_DETAIL  as rd',    'sched.ROOM_INDEX',   '=', 'rd.ROOM_INDEX')
             ->leftJoin('FACULTY_LOAD as fload', 's.SUB_SEC_INDEX', '=', 'fload.SUB_SEC_INDEX')
             ->leftJoin('USER_TABLE as u', 'fload.USER_INDEX', '=', 'u.USER_INDEX')
             ->where('e.USER_INDEX', $user->USER_INDEX)
             ->where('e.IS_VALID', 1)
             ->where('e.IS_DEL', 0)
             ->select(
+                's.SECTION',
                 'e.SY_FROM',
                 'e.SY_TO',
                 'e.CURRENT_SEMESTER',
@@ -33,7 +36,8 @@ class SubjectLoadController extends Controller
                 'sched.WEEK_DAY',
                 'sched.HOUR_FROM_24',
                 'sched.HOUR_TO_24',
-                DB::raw("CONCAT(u.LNAME, ', ', u.FNAME, ' ', u.MNAME) as faculty_name")
+                'rd.ROOM_NUMBER',
+                DB::raw("CONCAT(u.LNAME, ', ', u.FNAME, ' ', u.MNAME) as faculty_name"),
             )
             ->get();
 

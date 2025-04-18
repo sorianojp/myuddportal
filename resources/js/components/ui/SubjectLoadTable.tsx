@@ -38,30 +38,38 @@ export default function SubjectLoadTable({ term, subjects }: SubjectLoadTablePro
             <tr>
               <th className="px-4 py-2 w-24">Subject Code</th>
               <th className="px-4 py-2 w-48">Subject Title</th>
+              <th className="px-4 py-2 w-48">Section</th>
               <th className="px-4 py-2 w-24 text-center">Units</th>
               <th className="px-4 py-2 w-48">Schedule</th>
               <th className="px-4 py-2 w-48">Faculty</th>
             </tr>
           </thead>
           <tbody>
-            {Object.entries(groupedSubjects).map(([code, group]) => {
-              const subject = group[0];
-              const schedules = group
-                .map(s => {
-                  if (s.WEEK_DAY !== null && s.HOUR_FROM_24 && s.HOUR_TO_24) {
-                    const day = isNaN(Number(s.WEEK_DAY)) ? s.WEEK_DAY : dayNames[Number(s.WEEK_DAY)];
-                    return `${day}: ${String(s.HOUR_FROM_24).padStart(2, '0')}:00 - ${String(s.HOUR_TO_24).padStart(2, '0')}:00`;
-                  }
-                  return null;
-                })
-                .filter(Boolean)
-                .filter((v, i, a) => a.indexOf(v) === i)
-                .join(', ');
+          {Object.entries(groupedSubjects).map(([code, group]) => {
+  const subject = group[0];
+  const schedules = group
+    .map(s => {
+      if (s.WEEK_DAY !== null && s.HOUR_FROM_24 && s.HOUR_TO_24) {
+        const day = isNaN(Number(s.WEEK_DAY))
+          ? s.WEEK_DAY
+          : dayNames[Number(s.WEEK_DAY)];
+        const from = String(s.HOUR_FROM_24).padStart(2, '0') + ':00';
+        const to   = String(s.HOUR_TO_24).padStart(2, '0') + ':00';
+        // include room number if available
+        const room = s.ROOM_NUMBER ? ` (${s.ROOM_NUMBER})` : '';
+        return `${day}: ${from} - ${to}${room}`;
+      }
+      return null;
+    })
+    .filter(Boolean)
+    .filter((v, i, a) => a.indexOf(v) === i)
+    .join(', ');
 
               return (
                 <tr key={code} className="hover:bg-gray-50 dark:hover:bg-neutral-800 border-t">
                   <td className="px-4 py-2">{subject.SUB_CODE}</td>
                   <td className="px-4 py-2">{subject.SUB_NAME}</td>
+                  <td className="px-4 py-2">{subject.SECTION}</td>
                   <td className="px-4 py-2 text-center">{subject.tot_acad_unit}</td>
                   <td className="px-4 py-2">{schedules || 'N/A'}</td>
                   <td className="px-4 py-2">{subject.faculty_name || 'N/A'}</td>
@@ -71,7 +79,7 @@ export default function SubjectLoadTable({ term, subjects }: SubjectLoadTablePro
           </tbody>
         <tfoot className="bg-gray-100 dark:bg-neutral-800">
             <tr>
-                <th colSpan={2}></th>
+                <th colSpan={3}></th>
                 <th className="px-4 py-2 w-24 text-center">{totalUnits}</th>
                 <th colSpan={2}></th>
             </tr>

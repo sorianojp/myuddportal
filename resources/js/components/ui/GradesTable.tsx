@@ -18,6 +18,7 @@ export default function GradesTable({ term, grades }: GradesTableProps) {
         <table className="min-w-full text-sm text-left bg-white text-black dark:bg-neutral-900 dark:text-white">
           <thead className="bg-gray-100 dark:bg-neutral-800">
             <tr>
+                <th className="px-4 py-2 w-48">Subject Code</th>
               <th className="px-4 py-2 w-48">Subject</th>
               <th className="px-4 py-2 w-24">Grade Type</th>
               <th className="px-4 py-2 w-24">Grade</th>
@@ -29,6 +30,7 @@ export default function GradesTable({ term, grades }: GradesTableProps) {
           <tbody>
             {grades.map((grade, idx) => (
               <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-neutral-800 border-t">
+                                <td className="px-4 py-2">{grade.sub_section?.subject?.SUB_CODE ?? 'N/A'}</td>
                 <td className="px-4 py-2">{grade.sub_section?.subject?.SUB_NAME ?? 'N/A'}</td>
                 <td className="px-4 py-2">{grade.GRADE_NAME}</td>
                 <td className="px-4 py-2">{grade.GRADE}</td>

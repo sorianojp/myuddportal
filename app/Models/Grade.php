@@ -25,17 +25,10 @@ class Grade extends Model
     {
         return $this->belongsTo(CurriculumHistory::class, 'CUR_HIST_INDEX', 'CUR_HIST_INDEX');
     }
-    // In App\Models\Grade and App\Models\TermGrade
+
     public function scopeValid($query)
     {
         return $query->where('IS_VALID', 1)->where('IS_DEL', 0);
-    }
-
-    public function scopeFilterCurriculum($query, $from, $to, $sem)
-    {
-        return $query->when($from, fn($q) => $q->whereHas('curriculum', fn($c) => $c->where('SY_FROM', $from)))
-                    ->when($to, fn($q) => $q->whereHas('curriculum', fn($c) => $c->where('SY_TO', $to)))
-                    ->when($sem !== null, fn($q) => $q->whereHas('curriculum', fn($c) => $c->where('SEMESTER', $sem)));
     }
 
 }

@@ -1,4 +1,6 @@
 export interface EnrolledSubject {
+    ROOM_NUMBER: string;
+    SECTION: string;
     SY_FROM: number;
     SY_TO: number;
     CURRENT_SEMESTER: number;
@@ -8,5 +10,5 @@ export interface EnrolledSubject {
     WEEK_DAY: number | string | null;
     HOUR_FROM_24: number | null;
     HOUR_TO_24: number | null;
-    faculty_name?: string;
+    faculty_name: string;
 }

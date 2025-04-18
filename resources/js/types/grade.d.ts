@@ -14,6 +14,7 @@ export interface Grade {
     sub_section?: {
         subject?: {
             SUB_NAME: string;
+            SUB_CODE: string;
         };
     };
 }

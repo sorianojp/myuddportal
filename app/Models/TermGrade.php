@@ -30,10 +30,4 @@ class TermGrade extends Model
     {
         return $query->where('IS_VALID', 1)->where('IS_DEL', 0);
     }
-    public function scopeFilterCurriculum($query, $from, $to, $sem)
-    {
-        return $query->when($from, fn($q) => $q->whereHas('curriculum', fn($c) => $c->where('SY_FROM', $from)))
-                    ->when($to, fn($q) => $q->whereHas('curriculum', fn($c) => $c->where('SY_TO', $to)))
-                    ->when($sem !== null, fn($q) => $q->whereHas('curriculum', fn($c) => $c->where('SEMESTER', $sem)));
-    }
 }
