@@ -24,6 +24,7 @@ class HandleInertiaRequests extends Middleware
                     'USER_ID'   => $request->user()->USER_ID,
                     'full_name' => $request->user()->userProfile->full_name,
                     'ID_NUMBER' => $request->user()->userProfile->ID_NUMBER,
+                    'course' => $request->user()->course,
                 ] : null,
             ],
 

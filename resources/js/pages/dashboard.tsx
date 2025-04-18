@@ -23,8 +23,8 @@ export default function Dashboard() {
       <Head title="Dashboard" />
       <div className="px-4 py-6 space-y-6">
         <HeadingSmall
-          title={`Welcome, ${user.full_name}`}
-          description={`${user.USER_ID}, ${user.ID_NUMBER ?? 'N/A'}`}
+          title={`Welcome, ${user.full_name} (${user.ID_NUMBER})`}
+          description={`${user.course.COURSE_NAME} (${user.course.COURSE_CODE})`}
         />
       </div>
     </AppLayout>

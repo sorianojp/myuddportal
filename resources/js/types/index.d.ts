@@ -5,7 +5,11 @@ import type { Config } from 'ziggy-js';
 export interface User {
   USER_ID: string;
   full_name: string;
-  ID_NUMBER?: string; // You were accessing this, but it wasn't declared
+  ID_NUMBER: string;
+  course: {
+    COURSE_NAME: string;
+    COURSE_CODE: string;
+  };
   [key: string]: unknown;
 }
 

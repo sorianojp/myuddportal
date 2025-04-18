@@ -27,4 +27,22 @@ class User extends Authenticatable
         return $this->hasMany(TermGrade::class, 'user_index_', 'USER_INDEX');
     }
 
+    public function curriculumHistories()
+    {
+        return $this->hasMany(CurriculumHistory::class, 'USER_INDEX', 'USER_INDEX');
+    }
+
+    public function getCourseAttribute(): ?array
+    {
+        $history = $this->curriculumHistories()
+                        ->with('courseOffered')
+                        ->orderByDesc('DATE_ENROLLED')
+                        ->first();
+
+        return optional($history->courseOffered)
+                   // only pull back the two columns you need
+                   ->only(['COURSE_NAME', 'COURSE_CODE']);
+    }
+
+
 }
