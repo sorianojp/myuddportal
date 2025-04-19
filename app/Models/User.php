@@ -2,8 +2,11 @@
 
 namespace App\Models;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 class User extends Authenticatable
 {
+    use HasFactory;
+
     protected $table = 'LOGIN_INFO'; // Authentication info is stored here
     protected $primaryKey = 'LOGIN_INDEX'; // Primary key for the login table
     public $timestamps = false;
