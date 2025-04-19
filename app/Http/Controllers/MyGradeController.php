@@ -18,14 +18,50 @@ class MyGradeController extends Controller
         $defaultSem = $currentTerm ? (string) $currentTerm->CUR_SEMESTER : null;
 
         $finalGrades = $user->finalGrades()
-            ->with(['subSection.subject', 'remark', 'encodedByUser', 'curriculum'])
+        ->select(['GS_INDEX', 'GRADE_NAME', 'GRADE', 'CREDIT_EARNED', 'REMARK_INDEX', 'SUB_SEC_INDEX', 'CUR_HIST_INDEX', 'ENCODED_BY']) // 👈 your main table fields
+        ->with([
+            'subSection.subject' => function ($q) {
+                $q->select('SUB_INDEX', 'SUB_CODE', 'SUB_NAME');
+            },
+            'subSection' => function ($q) {
+                $q->select('SUB_SEC_INDEX', 'SUB_INDEX'); // needed for subject relation
+            },
+            'remark' => function ($q) {
+                $q->select('REMARK_INDEX', 'REMARK');
+            },
+            'encodedByUser' => function ($q) {
+                $q->select('USER_INDEX', 'FNAME', 'MNAME', 'LNAME');
+            },
+            'curriculum' => function ($q) {
+                $q->select('CUR_HIST_INDEX', 'SY_FROM', 'SY_TO', 'SEMESTER');
+            },
+        ])
+        ->valid()
+        ->get();
+
+
+            $termGrades = $user->termGrades()
+            ->select(['GS_INDEX', 'GRADE_NAME', 'GRADE', 'CREDIT_EARNED', 'REMARK_INDEX', 'SUB_SEC_INDEX', 'CUR_HIST_INDEX', 'ENCODED_BY']) // only needed fields
+            ->with([
+                'subSection.subject' => function ($q) {
+                    $q->select('SUB_INDEX', 'SUB_CODE', 'SUB_NAME');
+                },
+                'subSection' => function ($q) {
+                    $q->select('SUB_SEC_INDEX', 'SUB_INDEX'); // required to link with subject
+                },
+                'remark' => function ($q) {
+                    $q->select('REMARK_INDEX', 'REMARK');
+                },
+                'encodedByUser' => function ($q) {
+                    $q->select('USER_INDEX', 'FNAME', 'MNAME', 'LNAME');
+                },
+                'curriculum' => function ($q) {
+                    $q->select('CUR_HIST_INDEX', 'SY_FROM', 'SY_TO', 'SEMESTER');
+                },
+            ])
             ->valid()
             ->get();
 
-        $termGrades = $user->termGrades()
-            ->with(['subSection.subject', 'remark', 'encodedByUser', 'curriculum'])
-            ->valid()
-            ->get();
 
         $allGrades = $termGrades->merge($finalGrades);
 

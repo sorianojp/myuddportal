@@ -18,10 +18,22 @@ class SubjectLoadController extends Controller
         $defaultSy = $currentTerm ? "{$currentTerm->CUR_SCHYR_FROM}-{$currentTerm->CUR_SCHYR_TO}" : null;
         $defaultSem = $currentTerm ? (string) $currentTerm->CUR_SEMESTER : null;
 
-        $enrollments = StudentEnrollment::with('subSection.subject')
+        $enrollments = StudentEnrollment::with([
+            'subSection' => function ($q) {
+                $q->select([
+                    'SUB_SEC_INDEX', 'SUB_INDEX', 'SECTION',
+                    'OFFERING_SY_FROM', 'OFFERING_SY_TO', 'OFFERING_SEM'
+                ]);
+            },
+            'subSection.subject' => function ($q) {
+                $q->select(['SUB_INDEX', 'SUB_CODE', 'SUB_NAME']);
+            },
+        ])
+            ->select(['USER_INDEX', 'SUB_SEC_INDEX']) // Needed fields only
             ->valid()
             ->where('USER_INDEX', $user->USER_INDEX)
             ->get();
+
 
         $grouped = collect($enrollments)->flatMap(function ($enrollment) {
             $baseSection = $enrollment->subSection;
