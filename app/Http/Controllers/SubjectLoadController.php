@@ -1,9 +1,11 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use App\Models\StudentEnrollment;
+use App\Models\SubSection;
 
 class SubjectLoadController extends Controller
 {
@@ -11,63 +13,101 @@ class SubjectLoadController extends Controller
     {
         $user = Auth::user();
 
-        // 1) pull in everything via Eloquent
-        $enrollments = StudentEnrollment::with([
-            'subSection.subject',
-            'subSection.roomAssigns.roomDetail',
-            'subSection.facultyLoads.faculty',
-        ])
-        ->valid()
-        ->where('USER_INDEX', $user->USER_INDEX)
-        ->get();
+        // Step 1: Get all enrollments with base subsection & subject
+        $enrollments = StudentEnrollment::with('subSection.subject')
+            ->valid()
+            ->where('USER_INDEX', $user->USER_INDEX)
+            ->get();
 
-        // 2) flatten into the same shape your old raw query gave you
-        $flat = $enrollments->flatMap(function($e) {
-            $sec = $e->subSection;
-            return $sec->roomAssigns->map(function($ra) use ($e, $sec) {
-                return (object)[
-                    'SY_FROM'          => $e->SY_FROM,
-                    'SY_TO'            => $e->SY_TO,
-                    'CURRENT_SEMESTER' => $e->CURRENT_SEMESTER,
-                    'SUB_CODE'         => $sec->subject->SUB_CODE,
-                    'SUB_NAME'         => $sec->subject->SUB_NAME,
-                    'SECTION'          => $sec->SECTION,
-                    'tot_acad_unit'    => $sec->subject->tot_acad_unit,
-                    'WEEK_DAY'         => $ra->WEEK_DAY,
-                    'HOUR_FROM_24'     => $ra->HOUR_FROM_24,
-                    'HOUR_TO_24'       => $ra->HOUR_TO_24,
-                    'ROOM_NUMBER'      => $ra->roomDetail->ROOM_NUMBER ?? null,
-                    'faculty_name'     => optional(
-                        $sec->facultyLoads->first()?->faculty
-                    )->getFullNameAttribute(),
-                ];
-            });
+        // Step 2: Build full subject-section blocks including all related subsections
+        $grouped = collect($enrollments)->flatMap(function ($enrollment) {
+            $baseSection = $enrollment->subSection;
+
+            // Match all subsections (lec/lab) of the same subject, section, and term
+            $relatedSections = SubSection::with([
+                'subject',
+                'roomAssigns.roomDetail',
+                'facultyLoads.faculty',
+            ])
+            ->where('SUB_INDEX', $baseSection->SUB_INDEX)
+            ->where('SECTION', $baseSection->SECTION)
+            ->where('OFFERING_SY_FROM', $baseSection->OFFERING_SY_FROM)
+            ->where('OFFERING_SY_TO', $baseSection->OFFERING_SY_TO)
+            ->where('OFFERING_SEM', $baseSection->OFFERING_SEM)
+            ->valid()
+            ->get();
+
+            // Schedule strings
+            $scheduleBlocks = [];
+
+            // Collect most recent faculty assigned across all subsections
+            $facultySet = collect();
+
+            foreach ($relatedSections as $section) {
+
+                $subject = $section->subject;
+
+                foreach ($section->roomAssigns as $ra) {
+                    $day = date('l', strtotime("Sunday +{$ra->WEEK_DAY} days"));
+                    $from = date('g:i A', strtotime("{$ra->HOUR_FROM_24}:00"));
+                    $to = date('g:i A', strtotime("{$ra->HOUR_TO_24}:00"));
+                    $room = $ra->roomDetail->ROOM_NUMBER ?? 'TBA';
+                    $isLab = $ra->IS_LEC ? ' (lab)' : '';
+
+                    $scheduleBlocks[] = "$day: $from - $to$isLab ($room)";
+                }
+
+                // Pick latest faculty (like your SQL logic)
+                $latestFaculty = $section->facultyLoads
+                    ->sortByDesc(fn ($f) => $f->FACULTY_LOAD_ID ?? $f->USER_INDEX)
+                    ->first()?->faculty?->getFullNameAttribute();
+
+                if ($latestFaculty) {
+                    $facultySet->push($latestFaculty);
+                }
+            }
+
+            $facultyNames = $facultySet->unique()->implode(', ') ?: 'Unknown Faculty';
+
+            return [[
+                'SY_FROM'       => $baseSection->OFFERING_SY_FROM,
+                'SY_TO'         => $baseSection->OFFERING_SY_TO,
+                'SEMESTER'      => $baseSection->OFFERING_SEM,
+                'SUB_CODE'      => $baseSection->subject->SUB_CODE,
+                'SUB_NAME'      => $baseSection->subject->SUB_NAME,
+                'SECTION'       => $baseSection->SECTION,
+                'schedule'      => implode(', ', $scheduleBlocks),
+                'faculty_name'  => $facultyNames,
+            ]];
         });
 
-        // 3) group by “YYYY-YYYY-S#”
-        $rawGrouped = $flat->groupBy(fn($item) =>
-            "{$item->SY_FROM}-{$item->SY_TO}-S{$item->CURRENT_SEMESTER}"
-        );
+        // Step 3: Group by "YYYY-YYYY-S#"
+        $groupedByTerm = $grouped->groupBy(function ($item) {
+            return "{$item['SY_FROM']}-{$item['SY_TO']}-S{$item['SEMESTER']}";
+        });
 
-        // 4) sort by year desc, then sem order Summer>2nd>1st
-        $sortedKeys = collect($rawGrouped->keys())
+        // Step 4: Sort terms descending by year and semester (Summer > 2nd > 1st)
+        $sortedKeys = $groupedByTerm->keys()
             ->map(fn($key) => [
                 'key'      => $key,
                 'year'     => (int) explode('-', $key)[0],
-                'semOrder' => match ((int)substr($key, -1)) {
-                    0 => 0, 2 => 1, 1 => 2, default => 3
+                'semOrder' => match ((int) substr($key, -1)) {
+                    0 => 0, // Summer
+                    2 => 1, // 2nd
+                    1 => 2, // 1st
+                    default => 3,
                 },
             ])
             ->sortByDesc('year')
             ->groupBy('year')
-            ->map(fn($grp) => $grp->sortBy('semOrder'))
+            ->map(fn($group) => $group->sortBy('semOrder'))
             ->flatten(1)
             ->pluck('key');
 
-        $sortedGrouped = $sortedKeys
-            ->mapWithKeys(fn($k) => [ $k => $rawGrouped[$k] ]);
+        $sortedGrouped = $sortedKeys->mapWithKeys(
+            fn($key) => [$key => $groupedByTerm[$key]]
+        );
 
-        // 5) hand off to Inertia
         return Inertia::render('subjectLoad/index', [
             'enrolledSubjects' => $sortedGrouped,
         ]);

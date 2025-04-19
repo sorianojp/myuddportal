@@ -22,4 +22,10 @@ class SubSection extends Model
     {
         return $this->hasMany(FacultyLoad::class, 'SUB_SEC_INDEX', 'SUB_SEC_INDEX');
     }
+
+    public function scopeValid($q)
+    {
+        return $q->where('IS_VALID', 1)->where('IS_DEL', 0);
+    }
+
 }
