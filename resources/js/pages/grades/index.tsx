@@ -19,11 +19,13 @@ export default function MyGrade() {
   const {
     availableTerms,
     finalGroupedGrades,
+    defaultSy,
+    defaultSem,
   } = props;
 
-  const [schoolYear, setSchoolYear] = useState('');
-  const [semester, setSemester] = useState('');
-  const [gradeName, setGradeName] = useState('');
+  const [schoolYear, setSchoolYear] = useState(defaultSy ?? '');
+  const [semester, setSemester] = useState(defaultSem ?? '');
+  const [gradeName, setGradeName] = useState('all');
 
   const isSYAll = schoolYear === 'all';
   const isSYSelected = schoolYear !== '' && schoolYear !== null;
@@ -35,13 +37,14 @@ export default function MyGrade() {
           const syKey = `${sy}-${to}`;
 
           const matchSy = isSYAll || syKey === schoolYear;
+
           const matchSem = semester === '' || semester === 'all' || {
             '0': 'Summer',
             '1': 'First Semester',
             '2': 'Second Semester',
           }[semester] === semLabel;
 
-          const gradeFiltered = gradeName === '' || gradeName === 'all'
+          const gradeFiltered = gradeName === 'all'
             ? grades
             : grades.filter(g => g.GRADE_NAME.toLowerCase() === gradeName.toLowerCase());
 
@@ -64,7 +67,7 @@ export default function MyGrade() {
         <form onSubmit={e => e.preventDefault()} className="flex flex-wrap gap-4">
           {/* School Year */}
           <div>
-            <label htmlFor="school_year" className="block text-sm font-medium mb-1">School Year</label>
+            <label className="block text-sm font-medium mb-1">School Year</label>
             <Select value={schoolYear} onValueChange={setSchoolYear}>
               <SelectTrigger>
                 <SelectValue placeholder="Select School Year" />
@@ -80,7 +83,7 @@ export default function MyGrade() {
 
           {/* Semester */}
           <div>
-            <label htmlFor="semester" className="block text-sm font-medium mb-1">Semester</label>
+            <label className="block text-sm font-medium mb-1">Semester</label>
             <Select value={semester} onValueChange={setSemester}>
               <SelectTrigger>
                 <SelectValue placeholder="Select Semester" />
@@ -96,7 +99,7 @@ export default function MyGrade() {
 
           {/* Grade Type */}
           <div>
-            <label htmlFor="grade_name" className="block text-sm font-medium mb-1">Grade Type</label>
+            <label className="block text-sm font-medium mb-1">Grade Type</label>
             <Select value={gradeName} onValueChange={setGradeName}>
               <SelectTrigger>
                 <SelectValue placeholder="Select Grade Type" />

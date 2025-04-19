@@ -1,7 +1,5 @@
 import AppLayout from '@/layouts/app-layout';
 import { Head, usePage } from '@inertiajs/react';
-import type { PageProps } from '@/types';
-import type { EnrolledSubject } from '@/types/subjectload';
 import HeadingSmall from '@/components/heading-small';
 import { useState } from 'react';
 import {
@@ -12,13 +10,17 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import SubjectLoadTable from '@/components/ui/SubjectLoadTable';
+import type { SubjectLoadPageProps } from '@/types/subjectload';
 
 export default function SubjectLoad() {
-  const { props } = usePage<PageProps & { enrolledSubjects: Record<string, EnrolledSubject[]> }>();
-  const { enrolledSubjects } = props;
+  const {
+    enrolledSubjects,
+    defaultSy,
+    defaultSem,
+  } = usePage<SubjectLoadPageProps>().props;
 
-  const [filterSyFrom, setFilterSyFrom] = useState('');
-  const [filterSem, setFilterSem] = useState('');
+  const [filterSyFrom, setFilterSyFrom] = useState(defaultSy ?? '');
+  const [filterSem, setFilterSem] = useState(defaultSem ?? '');
 
   const termKeys = Object.keys(enrolledSubjects);
   const syOptions = Array.from(new Set(termKeys.map(term => term.split('-S')[0])));
