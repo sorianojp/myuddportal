@@ -1,4 +1,5 @@
 export interface EnrolledSubject {
+    total_units: string;
     schedule: string;
     ROOM_NUMBER: string;
     SECTION: string;

@@ -76,6 +76,11 @@ class SubjectLoadController extends Controller
                 'SUB_CODE'      => $baseSection->subject->SUB_CODE,
                 'SUB_NAME'      => $baseSection->subject->SUB_NAME,
                 'SECTION'       => $baseSection->SECTION,
+                'total_units' => $relatedSections
+    ->flatMap(fn($sec) => $sec->facultyLoads)
+    ->unique('SUB_SEC_INDEX')
+    ->sum(fn($load) => (float) $load->LOAD_UNIT ?? 0),
+
                 'schedule'      => implode(', ', $scheduleBlocks),
                 'faculty_name'  => $facultyNames,
             ]];
