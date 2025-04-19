@@ -21,33 +21,36 @@ export default function MyGrade() {
     finalGroupedGrades,
   } = props;
 
-  const [schoolYear, setSchoolYear] = useState('all');
-  const [semester, setSemester] = useState('all');
-  const [gradeName, setGradeName] = useState('all');
+  const [schoolYear, setSchoolYear] = useState('');
+  const [semester, setSemester] = useState('');
+  const [gradeName, setGradeName] = useState('');
 
-  const normalize = (val: string) => (val === 'all' ? '' : val);
+  const isSYAll = schoolYear === 'all';
+  const isSYSelected = schoolYear !== '' && schoolYear !== null;
 
-  const filteredTerms = Object.entries(finalGroupedGrades)
-    .map(([term, grades]) => {
-      const [sy, to, semLabel] = term.split('-');
-      const matchSy = schoolYear === 'all' || `${sy}-${to}` === schoolYear;
-      const matchSem = normalize(semester)
-        ? {
+  const filteredTerms = isSYSelected
+    ? Object.entries(finalGroupedGrades)
+        .map(([term, grades]) => {
+          const [sy, to, semLabel] = term.split('-');
+          const syKey = `${sy}-${to}`;
+
+          const matchSy = isSYAll || syKey === schoolYear;
+          const matchSem = semester === '' || semester === 'all' || {
             '0': 'Summer',
             '1': 'First Semester',
             '2': 'Second Semester',
-          }[normalize(semester)] === semLabel
-        : true;
+          }[semester] === semLabel;
 
-      const filteredGrades = normalize(gradeName)
-        ? grades.filter(g => g.GRADE_NAME === normalize(gradeName))
-        : grades;
+          const gradeFiltered = gradeName === '' || gradeName === 'all'
+            ? grades
+            : grades.filter(g => g.GRADE_NAME.toLowerCase() === gradeName.toLowerCase());
 
-      const shouldInclude = matchSy && matchSem && filteredGrades.length > 0;
+          const shouldInclude = matchSy && matchSem && gradeFiltered.length > 0;
 
-      return shouldInclude ? [term, filteredGrades] : null;
-    })
-    .filter(Boolean) as [string, typeof finalGroupedGrades[string]][];
+          return shouldInclude ? [term, gradeFiltered] : null;
+        })
+        .filter(Boolean) as [string, typeof finalGroupedGrades[string]][]
+    : [];
 
   return (
     <AppLayout breadcrumbs={[{ title: 'Grades', href: '/mygrades' }]}>
@@ -59,11 +62,12 @@ export default function MyGrade() {
         />
 
         <form onSubmit={e => e.preventDefault()} className="flex flex-wrap gap-4">
+          {/* School Year */}
           <div>
             <label htmlFor="school_year" className="block text-sm font-medium mb-1">School Year</label>
             <Select value={schoolYear} onValueChange={setSchoolYear}>
               <SelectTrigger>
-                <SelectValue placeholder="All" />
+                <SelectValue placeholder="Select School Year" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
@@ -74,11 +78,12 @@ export default function MyGrade() {
             </Select>
           </div>
 
+          {/* Semester */}
           <div>
             <label htmlFor="semester" className="block text-sm font-medium mb-1">Semester</label>
             <Select value={semester} onValueChange={setSemester}>
               <SelectTrigger>
-                <SelectValue placeholder="All" />
+                <SelectValue placeholder="Select Semester" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
@@ -89,24 +94,31 @@ export default function MyGrade() {
             </Select>
           </div>
 
+          {/* Grade Type */}
           <div>
             <label htmlFor="grade_name" className="block text-sm font-medium mb-1">Grade Type</label>
             <Select value={gradeName} onValueChange={setGradeName}>
               <SelectTrigger>
-                <SelectValue placeholder="All" />
+                <SelectValue placeholder="Select Grade Type" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
                 <SelectItem value="Prelim">Prelim</SelectItem>
                 <SelectItem value="Midterm">Midterm</SelectItem>
-                <SelectItem value="Semi-Final" disabled>Semi-Final</SelectItem>
+                <SelectItem value="Semi-Final">Semi-Final</SelectItem>
                 <SelectItem value="Final">Final</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </form>
 
-        {filteredTerms.length === 0 && (
+        {!isSYSelected && (
+          <p className="text-gray-600 mt-4 italic">
+            Please select a School Year to view your grades.
+          </p>
+        )}
+
+        {isSYSelected && filteredTerms.length === 0 && (
           <p className="text-gray-600 mt-4">No grades found for the selected filters.</p>
         )}
 

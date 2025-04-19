@@ -17,18 +17,23 @@ export default function SubjectLoad() {
   const { props } = usePage<PageProps & { enrolledSubjects: Record<string, EnrolledSubject[]> }>();
   const { enrolledSubjects } = props;
 
-  const [filterSyFrom, setFilterSyFrom] = useState('all');
-  const [filterSem, setFilterSem] = useState('all');
+  const [filterSyFrom, setFilterSyFrom] = useState('');
+  const [filterSem, setFilterSem] = useState('');
 
   const termKeys = Object.keys(enrolledSubjects);
   const syOptions = Array.from(new Set(termKeys.map(term => term.split('-S')[0])));
 
-  const filteredTerms = termKeys.filter(term => {
-    const [sy, sem] = term.split('-S');
-    const matchSy = filterSyFrom === 'all' || filterSyFrom === sy;
-    const matchSem = filterSem === 'all' || filterSem === sem;
-    return matchSy && matchSem;
-  });
+  const isSYAll = filterSyFrom === 'all';
+  const isSYSelected = filterSyFrom !== '' && filterSyFrom !== null;
+
+  const filteredTerms = isSYSelected
+    ? termKeys.filter(term => {
+        const [sy, sem] = term.split('-S');
+        const matchSy = isSYAll || filterSyFrom === sy;
+        const matchSem = filterSem === '' || filterSem === 'all' || filterSem === sem;
+        return matchSy && matchSem;
+      })
+    : [];
 
   return (
     <AppLayout breadcrumbs={[{ title: 'Subject Load Schedule', href: '/subjectload' }]}>
@@ -40,11 +45,12 @@ export default function SubjectLoad() {
         />
 
         <div className="flex flex-wrap gap-4">
+          {/* School Year */}
           <div>
             <label className="block text-sm font-medium mb-1">School Year</label>
             <Select value={filterSyFrom} onValueChange={setFilterSyFrom}>
               <SelectTrigger>
-                <SelectValue placeholder="All" />
+                <SelectValue placeholder="Select School Year" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
@@ -55,11 +61,12 @@ export default function SubjectLoad() {
             </Select>
           </div>
 
+          {/* Semester */}
           <div>
             <label className="block text-sm font-medium mb-1">Semester</label>
             <Select value={filterSem} onValueChange={setFilterSem}>
               <SelectTrigger>
-                <SelectValue placeholder="All" />
+                <SelectValue placeholder="Select Semester" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
@@ -71,7 +78,11 @@ export default function SubjectLoad() {
           </div>
         </div>
 
-        {filteredTerms.length === 0 && (
+        {!isSYSelected && (
+          <p className="text-gray-600 mt-6 italic">Please select a School Year to view your schedule.</p>
+        )}
+
+        {isSYSelected && filteredTerms.length === 0 && (
           <p className="text-gray-600 mt-6">No enrolled subjects found.</p>
         )}
 
