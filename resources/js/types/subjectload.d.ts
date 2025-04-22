@@ -16,8 +16,16 @@ export interface EnrolledSubject {
   faculty_name: string;
 }
 
+export interface Curriculum {
+    SY_FROM: string;
+    SY_TO: string;
+    SEMESTER: number;
+}
+
+
 export interface SubjectLoadPageProps extends PageProps {
   enrolledSubjects: Record<string, EnrolledSubject[]>;
   defaultSy: string | null;
   defaultSem: string | null;
+  availableTerms: Curriculum[];
 }

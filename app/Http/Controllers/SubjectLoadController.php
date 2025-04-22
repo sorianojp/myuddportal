@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Inertia\Inertia;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\StudentEnrollment;
 use App\Models\SubSection;
@@ -10,7 +11,7 @@ use App\Models\CurrentSchoolYear;
 
 class SubjectLoadController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
 
@@ -18,22 +19,48 @@ class SubjectLoadController extends Controller
         $defaultSy = $currentTerm ? "{$currentTerm->CUR_SCHYR_FROM}-{$currentTerm->CUR_SCHYR_TO}" : null;
         $defaultSem = $currentTerm ? (string) $currentTerm->CUR_SEMESTER : null;
 
-        $enrollments = StudentEnrollment::with([
-            'subSection' => function ($q) {
-                $q->select([
-                    'SUB_SEC_INDEX', 'SUB_INDEX', 'SECTION',
-                    'OFFERING_SY_FROM', 'OFFERING_SY_TO', 'OFFERING_SEM'
-                ]);
-            },
-            'subSection.subject' => function ($q) {
-                $q->select(['SUB_INDEX', 'SUB_CODE', 'SUB_NAME']);
-            },
-        ])
-            ->select(['USER_INDEX', 'SUB_SEC_INDEX']) // Needed fields only
-            ->valid()
-            ->where('USER_INDEX', $user->USER_INDEX)
-            ->get();
+        $selectedSy = $request->input('sy', $defaultSy);
+        $selectedSem = $request->input('sem', $defaultSem);
 
+        // ✅ 1. Build available terms from ALL enrollment records
+        $availableTerms = StudentEnrollment::with('subSection')
+            ->where('USER_INDEX', $user->USER_INDEX)
+            ->valid()
+            ->get()
+            ->pluck('subSection')
+            ->filter()
+            ->map(fn($s) => [
+                'SY_FROM' => $s->OFFERING_SY_FROM,
+                'SY_TO' => $s->OFFERING_SY_TO,
+                'SEMESTER' => $s->OFFERING_SEM,
+            ])
+            ->unique(fn($term) => "{$term['SY_FROM']}-{$term['SY_TO']}-{$term['SEMESTER']}")
+            ->sortByDesc('SY_FROM')
+            ->values()
+            ->all();
+
+        // ✅ 2. Filtered load of subject schedule
+        $enrollments = StudentEnrollment::with([
+            'subSection' => fn($q) => $q->select([
+                'SUB_SEC_INDEX', 'SUB_INDEX', 'SECTION',
+                'OFFERING_SY_FROM', 'OFFERING_SY_TO', 'OFFERING_SEM'
+            ]),
+            'subSection.subject' => fn($q) => $q->select(['SUB_INDEX', 'SUB_CODE', 'SUB_NAME']),
+        ])
+        ->select(['USER_INDEX', 'SUB_SEC_INDEX'])
+        ->valid()
+        ->where('USER_INDEX', $user->USER_INDEX)
+        ->when($selectedSy !== 'all', function ($q) use ($selectedSy) {
+            [$syFrom, $syTo] = explode('-', $selectedSy);
+            $q->whereHas('subSection', fn($q2) => $q2
+                ->where('OFFERING_SY_FROM', $syFrom)
+                ->where('OFFERING_SY_TO', $syTo)
+            );
+        })
+        ->when($selectedSem !== 'all', function ($q) use ($selectedSem) {
+            $q->whereHas('subSection', fn($q2) => $q2->where('OFFERING_SEM', $selectedSem));
+        })
+        ->get();
 
         $grouped = collect($enrollments)->flatMap(function ($enrollment) {
             $baseSection = $enrollment->subSection;
@@ -43,13 +70,13 @@ class SubjectLoadController extends Controller
                 'roomAssigns.roomDetail',
                 'facultyLoads.faculty',
             ])
-                ->where('SUB_INDEX', $baseSection->SUB_INDEX)
-                ->where('SECTION', $baseSection->SECTION)
-                ->where('OFFERING_SY_FROM', $baseSection->OFFERING_SY_FROM)
-                ->where('OFFERING_SY_TO', $baseSection->OFFERING_SY_TO)
-                ->where('OFFERING_SEM', $baseSection->OFFERING_SEM)
-                ->valid()
-                ->get();
+            ->where('SUB_INDEX', $baseSection->SUB_INDEX)
+            ->where('SECTION', $baseSection->SECTION)
+            ->where('OFFERING_SY_FROM', $baseSection->OFFERING_SY_FROM)
+            ->where('OFFERING_SY_TO', $baseSection->OFFERING_SY_TO)
+            ->where('OFFERING_SEM', $baseSection->OFFERING_SEM)
+            ->valid()
+            ->get();
 
             $scheduleBlocks = [];
             $facultySet = collect();
@@ -91,14 +118,12 @@ class SubjectLoadController extends Controller
             ]];
         });
 
-        $groupedByTerm = $grouped->groupBy(function ($item) {
-            return "{$item['SY_FROM']}-{$item['SY_TO']}-S{$item['SEMESTER']}";
-        });
+        $groupedByTerm = $grouped->groupBy(fn($item) => "{$item['SY_FROM']}-{$item['SY_TO']}-S{$item['SEMESTER']}");
 
         $sortedKeys = $groupedByTerm->keys()
             ->map(fn($key) => [
-                'key'      => $key,
-                'year'     => (int) explode('-', $key)[0],
+                'key' => $key,
+                'year' => (int) explode('-', $key)[0],
                 'semOrder' => match ((int) substr($key, -1)) {
                     0 => 0,
                     2 => 1,
@@ -112,14 +137,13 @@ class SubjectLoadController extends Controller
             ->flatten(1)
             ->pluck('key');
 
-        $sortedGrouped = $sortedKeys->mapWithKeys(
-            fn($key) => [$key => $groupedByTerm[$key]]
-        );
+        $sortedGrouped = $sortedKeys->mapWithKeys(fn($key) => [$key => $groupedByTerm[$key]]);
 
         return Inertia::render('subjectLoad/index', [
             'enrolledSubjects' => $sortedGrouped,
-            'defaultSy' => $defaultSy,
-            'defaultSem' => $defaultSem,
+            'availableTerms' => $availableTerms,
+            'defaultSy' => $selectedSy,
+            'defaultSem' => $selectedSem,
         ]);
     }
 }

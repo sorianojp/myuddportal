@@ -1,5 +1,5 @@
 import AppLayout from '@/layouts/app-layout';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import type { GradesPageProps } from '@/types/grade';
 
@@ -27,33 +27,27 @@ export default function MyGrade() {
   const [semester, setSemester] = useState(defaultSem ?? '');
   const [gradeName, setGradeName] = useState('all');
 
-  const isSYAll = schoolYear === 'all';
-  const isSYSelected = schoolYear !== '' && schoolYear !== null;
+  const handleFilterChange = (key: string, value: string) => {
+    const updatedSy = key === 'sy' ? value : schoolYear;
+    const updatedSem = key === 'sem' ? value : semester;
+    const updatedGrade = key === 'grade' ? value : gradeName;
 
-  const filteredTerms = isSYSelected
-    ? Object.entries(finalGroupedGrades)
-        .map(([term, grades]) => {
-          const [sy, to, semLabel] = term.split('-');
-          const syKey = `${sy}-${to}`;
+    setSchoolYear(updatedSy);
+    setSemester(updatedSem);
+    setGradeName(updatedGrade);
 
-          const matchSy = isSYAll || syKey === schoolYear;
+    router.visit(route('mygrades'), {
+      data: {
+        sy: updatedSy,
+        sem: updatedSem,
+        grade: updatedGrade,
+      },
+      preserveState: true,
+      preserveScroll: true,
+    });
+  };
 
-          const matchSem = semester === '' || semester === 'all' || {
-            '0': 'Summer',
-            '1': 'First Semester',
-            '2': 'Second Semester',
-          }[semester] === semLabel;
-
-          const gradeFiltered = gradeName === 'all'
-            ? grades
-            : grades.filter(g => g.GRADE_NAME.toLowerCase() === gradeName.toLowerCase());
-
-          const shouldInclude = matchSy && matchSem && gradeFiltered.length > 0;
-
-          return shouldInclude ? [term, gradeFiltered] : null;
-        })
-        .filter(Boolean) as [string, typeof finalGroupedGrades[string]][]
-    : [];
+  const groupedEntries = Object.entries(finalGroupedGrades);
 
   return (
     <AppLayout breadcrumbs={[{ title: 'Grades', href: '/mygrades' }]}>
@@ -68,7 +62,7 @@ export default function MyGrade() {
           {/* School Year */}
           <div>
             <label className="block text-sm font-medium mb-1">School Year</label>
-            <Select value={schoolYear} onValueChange={setSchoolYear}>
+            <Select value={schoolYear} onValueChange={val => handleFilterChange('sy', val)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select School Year" />
               </SelectTrigger>
@@ -84,7 +78,7 @@ export default function MyGrade() {
           {/* Semester */}
           <div>
             <label className="block text-sm font-medium mb-1">Semester</label>
-            <Select value={semester} onValueChange={setSemester}>
+            <Select value={semester} onValueChange={val => handleFilterChange('sem', val)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select Semester" />
               </SelectTrigger>
@@ -100,7 +94,7 @@ export default function MyGrade() {
           {/* Grade Type */}
           <div>
             <label className="block text-sm font-medium mb-1">Grade Type</label>
-            <Select value={gradeName} onValueChange={setGradeName}>
+            <Select value={gradeName} onValueChange={val => handleFilterChange('grade', val)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select Grade Type" />
               </SelectTrigger>
@@ -115,17 +109,11 @@ export default function MyGrade() {
           </div>
         </form>
 
-        {!isSYSelected && (
-          <p className="text-gray-600 mt-4 italic">
-            Please select a School Year to view your grades.
-          </p>
-        )}
-
-        {isSYSelected && filteredTerms.length === 0 && (
+        {groupedEntries.length === 0 && (
           <p className="text-gray-600 mt-4">No grades found for the selected filters.</p>
         )}
 
-        {filteredTerms.map(([term, grades]) => (
+        {groupedEntries.map(([term, grades]) => (
           <GradesTable key={term} term={term} grades={grades} />
         ))}
       </div>

@@ -1,5 +1,5 @@
 import AppLayout from '@/layouts/app-layout';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import HeadingSmall from '@/components/heading-small';
 import { useState } from 'react';
 import {
@@ -15,6 +15,7 @@ import type { SubjectLoadPageProps } from '@/types/subjectload';
 export default function SubjectLoad() {
   const {
     enrolledSubjects,
+    availableTerms,
     defaultSy,
     defaultSem,
   } = usePage<SubjectLoadPageProps>().props;
@@ -22,24 +23,31 @@ export default function SubjectLoad() {
   const [filterSyFrom, setFilterSyFrom] = useState(defaultSy ?? '');
   const [filterSem, setFilterSem] = useState(defaultSem ?? '');
 
+  const handleFilterChange = (key: string, value: string) => {
+    const newSy = key === 'sy' ? value : filterSyFrom;
+    const newSem = key === 'sem' ? value : filterSem;
+
+    setFilterSyFrom(newSy);
+    setFilterSem(newSem);
+
+    router.visit(route('subjectload'), {
+      data: {
+        sy: newSy,
+        sem: newSem,
+      },
+      preserveScroll: true,
+      preserveState: true,
+    });
+  };
+
   const termKeys = Object.keys(enrolledSubjects);
-  const syOptions = Array.from(new Set(termKeys.map(term => term.split('-S')[0])));
+  const filteredTerms = termKeys;
 
-  const isSYAll = filterSyFrom === 'all';
-  const isSYSelected = filterSyFrom !== '' && filterSyFrom !== null;
-
-  const filteredTerms = isSYSelected
-    ? termKeys.filter(term => {
-        const [sy, sem] = term.split('-S');
-        const matchSy = isSYAll || filterSyFrom === sy;
-        const matchSem = filterSem === '' || filterSem === 'all' || filterSem === sem;
-        return matchSy && matchSem;
-      })
-    : [];
+  const syOptions = [...new Set(availableTerms.map(t => `${t.SY_FROM}-${t.SY_TO}`))];
 
   return (
     <AppLayout breadcrumbs={[{ title: 'Subject Load Schedule', href: '/subjectload' }]}>
-      <Head title="Subjects Load Schedule" />
+      <Head title="Subject Load Schedule" />
       <div className="px-4 py-6 space-y-6">
         <HeadingSmall
           title="All Schedule"
@@ -50,7 +58,7 @@ export default function SubjectLoad() {
           {/* School Year */}
           <div>
             <label className="block text-sm font-medium mb-1">School Year</label>
-            <Select value={filterSyFrom} onValueChange={setFilterSyFrom}>
+            <Select value={filterSyFrom} onValueChange={val => handleFilterChange('sy', val)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select School Year" />
               </SelectTrigger>
@@ -66,7 +74,7 @@ export default function SubjectLoad() {
           {/* Semester */}
           <div>
             <label className="block text-sm font-medium mb-1">Semester</label>
-            <Select value={filterSem} onValueChange={setFilterSem}>
+            <Select value={filterSem} onValueChange={val => handleFilterChange('sem', val)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select Semester" />
               </SelectTrigger>
@@ -80,11 +88,7 @@ export default function SubjectLoad() {
           </div>
         </div>
 
-        {!isSYSelected && (
-          <p className="text-gray-600 mt-6 italic">Please select a School Year to view your schedule.</p>
-        )}
-
-        {isSYSelected && filteredTerms.length === 0 && (
+        {filteredTerms.length === 0 && (
           <p className="text-gray-600 mt-6">No enrolled subjects found.</p>
         )}
 

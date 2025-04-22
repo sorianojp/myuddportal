@@ -17,61 +17,67 @@ class MyGradeController extends Controller
         $defaultSy = $currentTerm ? "{$currentTerm->CUR_SCHYR_FROM}-{$currentTerm->CUR_SCHYR_TO}" : null;
         $defaultSem = $currentTerm ? (string) $currentTerm->CUR_SEMESTER : null;
 
+        $selectedSy = $request->input('sy', $defaultSy);
+        $selectedSem = $request->input('sem', $defaultSem);
+        $gradeFilter = $request->input('grade', 'all');
+
+        // Fetch grades matching filters
         $finalGrades = $user->finalGrades()
-        ->select(['GS_INDEX', 'GRADE_NAME', 'GRADE', 'CREDIT_EARNED', 'REMARK_INDEX', 'SUB_SEC_INDEX', 'CUR_HIST_INDEX', 'ENCODED_BY']) // 👈 your main table fields
-        ->with([
-            'subSection.subject' => function ($q) {
-                $q->select('SUB_INDEX', 'SUB_CODE', 'SUB_NAME');
-            },
-            'subSection' => function ($q) {
-                $q->select('SUB_SEC_INDEX', 'SUB_INDEX'); // needed for subject relation
-            },
-            'remark' => function ($q) {
-                $q->select('REMARK_INDEX', 'REMARK');
-            },
-            'encodedByUser' => function ($q) {
-                $q->select('USER_INDEX', 'FNAME', 'MNAME', 'LNAME');
-            },
-            'curriculum' => function ($q) {
-                $q->select('CUR_HIST_INDEX', 'SY_FROM', 'SY_TO', 'SEMESTER');
-            },
-        ])
-        ->valid()
-        ->get();
-
-
-            $termGrades = $user->termGrades()
-            ->select(['GS_INDEX', 'GRADE_NAME', 'GRADE', 'CREDIT_EARNED', 'REMARK_INDEX', 'SUB_SEC_INDEX', 'CUR_HIST_INDEX', 'ENCODED_BY']) // only needed fields
-            ->with([
-                'subSection.subject' => function ($q) {
-                    $q->select('SUB_INDEX', 'SUB_CODE', 'SUB_NAME');
-                },
-                'subSection' => function ($q) {
-                    $q->select('SUB_SEC_INDEX', 'SUB_INDEX'); // required to link with subject
-                },
-                'remark' => function ($q) {
-                    $q->select('REMARK_INDEX', 'REMARK');
-                },
-                'encodedByUser' => function ($q) {
-                    $q->select('USER_INDEX', 'FNAME', 'MNAME', 'LNAME');
-                },
-                'curriculum' => function ($q) {
-                    $q->select('CUR_HIST_INDEX', 'SY_FROM', 'SY_TO', 'SEMESTER');
-                },
-            ])
+            ->select(['GS_INDEX', 'GRADE_NAME', 'GRADE', 'CREDIT_EARNED', 'REMARK_INDEX', 'SUB_SEC_INDEX', 'CUR_HIST_INDEX', 'ENCODED_BY'])
+            ->when($selectedSy !== 'all', function ($q) use ($selectedSy) {
+                [$syFrom, $syTo] = explode('-', $selectedSy);
+                $q->whereHas('curriculum', fn($q2) => $q2
+                    ->where('SY_FROM', $syFrom)
+                    ->where('SY_TO', $syTo)
+                );
+            })
+            ->when($selectedSem !== 'all', function ($q) use ($selectedSem) {
+                $q->whereHas('curriculum', fn($q2) => $q2
+                    ->where('SEMESTER', $selectedSem)
+                );
+            })
+            ->when($gradeFilter !== 'all', fn($q) => $q->where('GRADE_NAME', $gradeFilter))
+            ->with(['subSection.subject', 'subSection', 'remark', 'encodedByUser', 'curriculum'])
             ->valid()
             ->get();
 
+        $termGrades = $user->termGrades()
+            ->select(['GS_INDEX', 'GRADE_NAME', 'GRADE', 'CREDIT_EARNED', 'REMARK_INDEX', 'SUB_SEC_INDEX', 'CUR_HIST_INDEX', 'ENCODED_BY'])
+            ->when($selectedSy !== 'all', function ($q) use ($selectedSy) {
+                [$syFrom, $syTo] = explode('-', $selectedSy);
+                $q->whereHas('curriculum', fn($q2) => $q2
+                    ->where('SY_FROM', $syFrom)
+                    ->where('SY_TO', $syTo)
+                );
+            })
+            ->when($selectedSem !== 'all', function ($q) use ($selectedSem) {
+                $q->whereHas('curriculum', fn($q2) => $q2
+                    ->where('SEMESTER', $selectedSem)
+                );
+            })
+            ->when($gradeFilter !== 'all', fn($q) => $q->where('GRADE_NAME', $gradeFilter))
+            ->with(['subSection.subject', 'subSection', 'remark', 'encodedByUser', 'curriculum'])
+            ->valid()
+            ->get();
 
         $allGrades = $termGrades->merge($finalGrades);
 
-        $availableTerms = $allGrades->pluck('curriculum')
+        // Build full availableTerms for filters
+        $availableTerms = $user->finalGrades()
+            ->with('curriculum')
+            ->valid()
+            ->get()
+            ->merge(
+                $user->termGrades()->with('curriculum')->valid()->get()
+            )
+            ->pluck('curriculum')
             ->filter()
             ->unique(fn($c) => "{$c->SY_FROM}-{$c->SY_TO}-{$c->SEMESTER}")
             ->sortByDesc('SY_FROM')
             ->values()
             ->all();
 
+        // Group grades by SY and SEM for rendering
         $groupedGrades = $allGrades
             ->filter(fn($g) => $g->curriculum)
             ->groupBy(fn($g) => "{$g->curriculum->SY_FROM}-{$g->curriculum->SY_TO}");
@@ -109,8 +115,8 @@ class MyGradeController extends Controller
             'user' => $user,
             'availableTerms' => $availableTerms,
             'finalGroupedGrades' => $sortedGrouped->toArray(),
-            'defaultSy' => $defaultSy,
-            'defaultSem' => $defaultSem,
+            'defaultSy' => $selectedSy,
+            'defaultSem' => $selectedSem,
         ]);
     }
 }
