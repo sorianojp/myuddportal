@@ -7,6 +7,7 @@ use App\Http\Controllers\SubjectLoadController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\FeeController;
 
+
 Route::get('/', function () { return Inertia::render('auth/login'); })->name('home');
 
 Route::middleware(['auth'])->group(function () {
