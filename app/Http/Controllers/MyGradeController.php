@@ -11,11 +11,11 @@ class MyGradeController extends Controller
 {
     public function index(Request $request)
     {
-        $user = Auth::user();
 
+        $user = Auth::user();
         $currentTerm = CurrentSchoolYear::getCurrent();
-        $defaultSy = $currentTerm ? "{$currentTerm->CUR_SCHYR_FROM}-{$currentTerm->CUR_SCHYR_TO}" : null;
-        $defaultSem = $currentTerm ? (string) $currentTerm->CUR_SEMESTER : null;
+        $defaultSy = "{$currentTerm->CUR_SCHYR_FROM}-{$currentTerm->CUR_SCHYR_TO}";
+        $defaultSem = $currentTerm->CUR_SEMESTER;
 
         $selectedSy = $request->input('sy', $defaultSy);
         $selectedSem = $request->input('sem', $defaultSem);

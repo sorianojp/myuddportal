@@ -5,7 +5,7 @@ use Inertia\Inertia;
 use App\Http\Controllers\MyGradeController;
 use App\Http\Controllers\SubjectLoadController;
 use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\FeeController;
+use App\Http\Controllers\ScheduleController;
 
 
 Route::get('/', function () { return Inertia::render('auth/login'); })->name('home');
@@ -13,9 +13,8 @@ Route::get('/', function () { return Inertia::render('auth/login'); })->name('ho
 Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', function () { return Inertia::render('dashboard'); })->name('dashboard');
     Route::get('/mygrades', [MyGradeController::class, 'index'])->name('mygrades');
-    Route::get('/subjectload', [SubjectLoadController::class, 'index'])->name('subjectload');
     Route::get('/payments', [PaymentController::class, 'index']);
-    Route::get('/fees', [FeeController::class, 'index']);
+    Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule.index');
 });
 
 

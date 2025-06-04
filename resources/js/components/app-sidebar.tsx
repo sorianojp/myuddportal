@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { CalendarCheck2, GraduationCap, LayoutGrid } from 'lucide-react';
+import { CalendarCheck2, GraduationCap, LayoutGrid, PhilippinePeso } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -19,9 +19,14 @@ const mainNavItems: NavItem[] = [
         icon: GraduationCap,
     },
     {
-        title: 'Subject Load Sched',
-        href: '/subjectload',
+        title: 'Schedule',
+        href: '/schedule',
         icon: CalendarCheck2,
+    },
+    {
+        title: 'Payment History',
+        href: '/payments',
+        icon: PhilippinePeso,
     },
 
 ];

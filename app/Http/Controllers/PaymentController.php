@@ -1,41 +1,55 @@
 <?php
 
 namespace App\Http\Controllers;
-use App\Models\Payment;
-use Inertia\Inertia;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
 class PaymentController extends Controller
 {
-
     public function index()
     {
-        $user = Auth::user();
+        $userIndex = Auth::user()->USER_INDEX;
+        // Load payments via DB with joins
+        $payments = DB::table('FA_STUD_PAYMENT as p')
+            ->leftJoin('FA_OTH_SCH_FEE as f', 'p.OTHSCH_FEE_INDEX', '=', 'f.OTHSCH_FEE_INDEX')
+            ->leftJoin('FA_STUD_REFUND as r', 'r.REFUND_TO_PMT_INDEX', '=', 'p.PAYMENT_INDEX')
+            ->leftJoin('USER_TABLE as u', 'u.USER_INDEX', '=', 'p.CREATED_BY')
+            ->leftJoin('USER_TABLE as cash_adv', 'cash_adv.USER_INDEX', '=', 'p.CASH_ADV_FROM_EMP_ID')
+            ->where('p.USER_INDEX', $userIndex)
+            ->where('p.IS_VALID', 1)
+            ->where('p.IS_DEL', 0)
+            ->where('p.IS_STUD_TEMP', 0)
+            ->where('p.PAYMENT_FOR', '!=', 7)
+            ->orderByDesc('p.DATE_PAID')
+            ->orderBy('p.CREATE_TIME')
+            ->select([
+                'p.PAYMENT_INDEX',
+                'p.PAYMENT_TYPE',
+                'p.PAYMENT_FOR',
+                'p.DATE_PAID',
+                'p.AMOUNT',
+                'p.OR_NUMBER',
+                'p.CHECK_NO',
+                'p.IS_MANUALLY_POSTED',
+                'p.BANK_POST_INDEX',
+                'p.IS_BANK_POST',
+                'p.PMT_SCH_INDEX',
+                'f.FEE_NAME',
+                'r.REFUND_NOTE',
+                'u.ID_NUMBER as POSTED_BY',
+                'cash_adv.ID_NUMBER as CASH_ADV_ID',
+                'cash_adv.LNAME as CASH_LNAME',
+                'cash_adv.FNAME as CASH_FNAME',
+                'cash_adv.MNAME as CASH_MNAME',
+            ])->get();
 
-        // Load all necessary relationships
-        $payments = Payment::with([
-            'otherSchoolFee',
-            'createdBy',
-            'cashAdvanceFrom',
-            'refund',
-            'journalVoucher',
-        ])
-        ->where('USER_INDEX', $user->USER_INDEX)
-        ->where('IS_VALID', 1)
-        ->where('IS_DEL', 0)
-        ->where('IS_STUD_TEMP', 0)
-        ->where('PAYMENT_FOR', '!=', 7)
-        ->orderBy('DATE_PAID')
-        ->orderBy('CREATE_TIME')
-        ->get();
-
-        // Temporary & Permanent banks (you might want to cache this in production)
+        // Banks
         $tempBanks = DB::table('FA_UPLOAD_BANK_LIST')->pluck('BANK_CODE', 'BANK_INDEX');
         $permBanks = DB::table('FA_BANK_LIST')->pluck('BANK_CODE', 'BANK_INDEX');
 
-        // Payment type mapping
+        // Mappings
         $paymentTypeMap = [
             0 => ' - Cash',
             1 => ' - Check',
@@ -46,8 +60,6 @@ class PaymentController extends Controller
             6 => ' - Credit Card',
             7 => ' - E-Pay',
         ];
-
-        // Payment For mapping
         $paymentForMap = [
             0 => 'Tuition',
             1 => 'Oth School Fee',
@@ -57,87 +69,55 @@ class PaymentController extends Controller
             10 => 'Back Account',
         ];
 
-        // Format payments
-        $formattedPayments = $payments->map(function ($payment) use ($paymentTypeMap, $paymentForMap, $tempBanks, $permBanks) {
-            $type = $paymentTypeMap[$payment->PAYMENT_TYPE] ?? '';
-            $checkInfo = $payment->CHECK_NO ? " #{$payment->CHECK_NO}" : '';
+        // Format each payment row
+        $formatted = $payments->map(function ($p) use ($paymentTypeMap, $paymentForMap, $tempBanks, $permBanks) {
+            $type = $paymentTypeMap[$p->PAYMENT_TYPE] ?? '';
+            $checkInfo = $p->CHECK_NO ? " #{$p->CHECK_NO}" : '';
 
-            // Determine Bank Payment
-            if ($payment->BANK_POST_INDEX && $payment->IS_BANK_POST) {
-                $bankName = $payment->IS_MANUALLY_POSTED
-                    ? ($tempBanks[$payment->BANK_POST_INDEX] ?? '')
-                    : ($permBanks[$payment->BANK_POST_INDEX] ?? '');
+            if ($p->BANK_POST_INDEX && $p->IS_BANK_POST) {
+                $bankName = $p->IS_MANUALLY_POSTED
+                    ? ($tempBanks[$p->BANK_POST_INDEX] ?? '')
+                    : ($permBanks[$p->BANK_POST_INDEX] ?? '');
 
-                $type = $payment->IS_MANUALLY_POSTED
+                $type = $p->IS_MANUALLY_POSTED
                     ? ' - BankPayment(Temp)'
                     : ' - BankPayment(Perm)';
                 $type .= $bankName ? " - $bankName" : '';
             }
 
-            // Name and ID if cash advance
             $cashAdvName = null;
-            if ($payment->cashAdvanceFrom) {
-                $cashAdvName = "{$payment->cashAdvanceFrom->LNAME}, {$payment->cashAdvanceFrom->FNAME} {$payment->cashAdvanceFrom->MNAME} ID:{$payment->cashAdvanceFrom->ID_NUMBER}";
+            if ($p->CASH_ADV_ID) {
+                $cashAdvName = "{$p->CASH_LNAME}, {$p->CASH_FNAME} {$p->CASH_MNAME} ID:{$p->CASH_ADV_ID}";
             }
 
-            // Determine description
-            if ($payment->PMT_SCH_INDEX == 0) {
+            if ($p->PMT_SCH_INDEX == 0) {
                 $description = "Enrollment/Downpayment$type";
-            } elseif ($payment->PAYMENT_TYPE == 3 && $payment->refund) {
-                $description = $payment->refund->REFUND_NOTE;
-            } elseif ($payment->PAYMENT_TYPE == 3) {
-                $description = " Refunded To " . ($payment->cashAdvanceFrom->ID_NUMBER ?? '');
-            } elseif ($payment->PAYMENT_TYPE == 4 && $payment->refund) {
-                $description = $payment->refund->REFUND_NOTE;
-            } elseif ($payment->PAYMENT_TYPE == 4) {
-                $description = " Refund Transferred From " . ($payment->cashAdvanceFrom->ID_NUMBER ?? '');
+            } elseif ($p->PAYMENT_TYPE == 3 && $p->REFUND_NOTE) {
+                $description = $p->REFUND_NOTE;
+            } elseif ($p->PAYMENT_TYPE == 3) {
+                $description = " Refunded To " . ($p->CASH_ADV_ID ?? '');
+            } elseif ($p->PAYMENT_TYPE == 4 && $p->REFUND_NOTE) {
+                $description = $p->REFUND_NOTE;
+            } elseif ($p->PAYMENT_TYPE == 4) {
+                $description = " Refund Transferred From " . ($p->CASH_ADV_ID ?? '');
             } else {
-                $feeName = $payment->otherSchoolFee->FEE_NAME ?? ($paymentForMap[$payment->PAYMENT_FOR] ?? 'Unknown');
+                $feeName = $p->FEE_NAME ?? ($paymentForMap[$p->PAYMENT_FOR] ?? 'Unknown');
                 $description = $feeName . ($cashAdvName ? " <font size=1>$cashAdvName</font>" : '') . $type . $checkInfo;
             }
 
             return [
-                'PAYMENT_INDEX' => $payment->PAYMENT_INDEX,
-                'OR_NUMBER' => $payment->OR_NUMBER ?? $payment->otherSchoolFee->FEE_NAME ?? '',
-                'DATE_PAID' => $payment->DATE_PAID,
-                'AMOUNT' => $payment->AMOUNT,
+                'PAYMENT_INDEX' => $p->PAYMENT_INDEX,
+                'OR_NUMBER' => $p->OR_NUMBER ?? $p->FEE_NAME ?? '',
+                'DATE_PAID' => $p->DATE_PAID,
+                'AMOUNT' => $p->AMOUNT,
                 'DESCRIPTION' => $description,
-                'PAYMENT_FOR' => $payment->PAYMENT_FOR,
-                'POSTED_BY' => $payment->createdBy->ID_NUMBER ?? null,
+                'PAYMENT_FOR' => $p->PAYMENT_FOR,
+                'POSTED_BY' => $p->POSTED_BY,
             ];
         });
 
         return Inertia::render('payments/index', [
-            'payments' => $formattedPayments,
+            'payments' => $formatted,
         ]);
     }
-
-
-        // public function index()
-    // {
-    //     $user = Auth::user();
-
-    //     $payments = Payment::with('otherSchoolFee')
-    //     ->where('USER_INDEX', $user->USER_INDEX)
-    //     ->orderByDesc('DATE_PAID')
-    //     ->get();
-
-    //     return Inertia::render('payments/index', [
-    //         'payments' => $payments->map(function ($payment) {
-    //             return [
-    //                 'PAYMENT_INDEX' => $payment->PAYMENT_INDEX,
-    //                 'OR_NUMBER' => $payment->OR_NUMBER,
-    //                 'DATE_PAID' => $payment->DATE_PAID,
-    //                 'AMOUNT' => $payment->AMOUNT,
-    //                 'AMOUNT_TENDERED' => $payment->AMOUNT_TENDERED,
-    //                 'AMOUNT_CHANGE' => $payment->AMOUNT_CHANGE,
-    //                 'otherSchoolFee' => $payment->otherSchoolFee ? [
-    //                     'FEE_NAME' => $payment->otherSchoolFee->FEE_NAME,
-    //                 ] : null,
-    //             ];
-    //         }),
-    //     ]);
-
-    // }
-
 }
