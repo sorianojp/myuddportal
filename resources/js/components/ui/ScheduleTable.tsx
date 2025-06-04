@@ -17,13 +17,13 @@ export default function ScheduleTable({ schedule }: ScheduleTableProps) {
         <table className="min-w-full text-sm text-left bg-white text-black dark:bg-neutral-900 dark:text-white">
           <thead className="bg-gray-100 dark:bg-neutral-800">
             <tr>
-              <th className="px-4 py-2 whitespace-nowrap">Subject Code</th>
-              <th className="px-4 py-2 whitespace-nowrap">Subject Name</th>
-              <th className="px-4 py-2 whitespace-nowrap">Section</th>
-              <th className="px-4 py-2 whitespace-nowrap">Room</th>
-              <th className="px-4 py-2 whitespace-nowrap">Day</th>
-              <th className="px-4 py-2 whitespace-nowrap">Time</th>
-              <th className="px-4 py-2 whitespace-nowrap">Type</th>
+              <th className="px-4 py-2 w-24">Subject Code</th>
+              <th className="px-4 py-2 w-48">Subject Name</th>
+              <th className="px-4 py-2 w-24">Section</th>
+              <th className="px-4 py-2 w-24">Room</th>
+              <th className="px-4 py-2 w-24">Day</th>
+              <th className="px-4 py-2 w-32">Time</th>
+              <th className="px-4 py-2 w-24">Type</th>
             </tr>
           </thead>
           <tbody>

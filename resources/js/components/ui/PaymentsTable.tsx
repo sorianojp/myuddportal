@@ -15,10 +15,10 @@ export default function PaymentsTable({ payments }: PaymentsTableProps) {
         <table className="min-w-full text-sm text-left bg-white text-black dark:bg-neutral-900 dark:text-white">
           <thead className="bg-gray-100 dark:bg-neutral-800">
             <tr>
-              <th className="px-4 py-2 whitespace-nowrap">OR Number</th>
-              <th className="px-4 py-2 whitespace-nowrap">Description</th>
-              <th className="px-4 py-2 whitespace-nowrap">Date Paid</th>
-              <th className="px-4 py-2 whitespace-nowrap">Amount</th>
+              <th className="px-4 py-2 w-32">OR Number</th>
+              <th className="px-4 py-2 w-48">Description</th>
+              <th className="px-4 py-2 w-24">Date Paid</th>
+              <th className="px-4 py-2 w-24">Amount</th>
             </tr>
           </thead>
           <tbody>

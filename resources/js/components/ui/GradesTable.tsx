@@ -16,13 +16,13 @@ export default function GradesTable({ grades, title }: GradesTableProps) {
         <table className="min-w-full text-sm text-left bg-white text-black dark:bg-neutral-900 dark:text-white">
           <thead className="bg-gray-100 dark:bg-neutral-800">
             <tr>
-              <th className="px-4 py-2 whitespace-nowrap">Subject Code</th>
-              <th className="px-4 py-2 whitespace-nowrap">Subject Name</th>
-              <th className="px-4 py-2 whitespace-nowrap">Grade Type</th>
-              <th className="px-4 py-2 whitespace-nowrap">Grade</th>
-              <th className="px-4 py-2 whitespace-nowrap">Credits</th>
-              <th className="px-4 py-2 whitespace-nowrap">Remark</th>
-              <th className="px-4 py-2 whitespace-nowrap">Encoded By</th>
+              <th className="px-4 py-2 w-24">Subject Code</th>
+              <th className="px-4 py-2 w-48">Subject Name</th>
+              <th className="px-4 py-2 w-24">Grade Type</th>
+              <th className="px-4 py-2 w-24">Grade</th>
+              <th className="px-4 py-2 w-24">Credits</th>
+              <th className="px-4 py-2 w-24">Remark</th>
+              <th className="px-4 py-2 w-48">Encoded By</th>
             </tr>
           </thead>
           <tbody>
