@@ -18,4 +18,5 @@ class UserProfile extends Model
     {
         return "{$this->LNAME}, {$this->FNAME} {$this->MNAME}";
     }
+
 }

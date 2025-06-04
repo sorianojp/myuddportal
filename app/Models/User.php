@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Models;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 class User extends Authenticatable
@@ -20,32 +21,14 @@ class User extends Authenticatable
         return $this->belongsTo(UserProfile::class, 'USER_INDEX', 'USER_INDEX');
     }
 
-    public function finalGrades()
+    public function getCourseAttribute()
     {
-        return $this->hasMany(Grade::class, 'user_index_', 'USER_INDEX');
+        return DB::table('STUD_CURRICULUM_HIST as sch')
+            ->join('COURSE_OFFERED as co', 'co.COURSE_INDEX', '=', 'sch.COURSE_INDEX')
+            ->where('sch.USER_INDEX', $this->USER_INDEX)
+            ->orderByDesc('sch.DATE_ENROLLED')
+            ->select('co.COURSE_CODE', 'co.COURSE_NAME')
+            ->first();
     }
-
-    public function termGrades()
-    {
-        return $this->hasMany(TermGrade::class, 'user_index_', 'USER_INDEX');
-    }
-
-    public function curriculumHistories()
-    {
-        return $this->hasMany(CurriculumHistory::class, 'USER_INDEX', 'USER_INDEX');
-    }
-
-    public function getCourseAttribute(): ?array
-    {
-        $history = $this->curriculumHistories()
-                        ->with('courseOffered')
-                        ->orderByDesc('DATE_ENROLLED')
-                        ->first();
-
-        return optional($history->courseOffered)
-                   // only pull back the two columns you need
-                   ->only(['COURSE_NAME', 'COURSE_CODE']);
-    }
-
 
 }
