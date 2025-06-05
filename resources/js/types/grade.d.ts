@@ -8,9 +8,6 @@ export interface GradeEntry {
   CREDIT_EARNED: number;
   REMARK: string;
   ENCODED_BY: string;
-  SY_FROM: number;
-  SY_TO: number;
-  SEMESTER: number;
 }
 
 
