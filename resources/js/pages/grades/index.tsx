@@ -8,7 +8,7 @@ export default function GradesPage() {
   const { finalGroupedGrades } = usePage<GradesPageProps>().props;
 
   return (
-    <AppLayout breadcrumbs={[{ title: 'Grades', href: '/mygrades' }]}> 
+    <AppLayout breadcrumbs={[{ title: 'Grades', href: '/mygrades' }]}>
       <Head title="My Grades" />
       <div className="px-4 py-6 space-y-6">
         <HeadingSmall
