@@ -10,9 +10,6 @@ const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frida
 export default function ScheduleTable({ schedule }: ScheduleTableProps) {
   return (
     <div className="rounded-md overflow-hidden border">
-      <div className="px-4 py-2 bg-gray-100 dark:bg-neutral-800 dark:text-white font-semibold border-b">
-        Class Schedule
-      </div>
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm text-left bg-white text-black dark:bg-neutral-900 dark:text-white">
           <thead className="bg-gray-100 dark:bg-neutral-800">

@@ -38,9 +38,29 @@ export default function GradesTable({ grades, title }: GradesTableProps) {
                   <td className="px-4 py-2">{entry.SUB_CODE}</td>
                   <td className="px-4 py-2">{entry.SUB_NAME}</td>
                   <td className="px-4 py-2">{entry.GRADE_NAME}</td>
-                  <td className="px-4 py-2">{entry.GRADE}</td>
+                  <td
+                      className={`px-4 py-2 font-semibold ${
+                        entry.GRADE == null || isNaN(parseFloat(entry.GRADE))
+                          ? 'text-gray-900'
+                          : parseFloat(entry.GRADE) < 75
+                          ? 'text-red-500'
+                          : 'text-green-500'
+                      }`}
+                    >
+                      {entry.GRADE == null || isNaN(parseFloat(entry.GRADE)) ? 'N/A' : entry.GRADE}
+                  </td>
                   <td className="px-4 py-2">{entry.CREDIT_EARNED}</td>
-                  <td className="px-4 py-2">{entry.REMARK}</td>
+                  <td className="px-4 py-2 font-semibold">
+                  <span className={
+                    entry.REMARK === 'Passed' ? 'text-green-500' :
+                    entry.REMARK === 'Failed' ? 'text-red-500' :
+                    entry.REMARK === 'In Progress' ? 'text-yellow-500' :
+                    entry.REMARK === 'NE' ? 'text-blue-500' :
+                    'text-gray-500'
+                  }>
+                    {entry.REMARK ?? 'N/A'}
+                  </span>
+                  </td>
                   <td className="px-4 py-2">{entry.ENCODED_BY}</td>
                 </tr>
               ))

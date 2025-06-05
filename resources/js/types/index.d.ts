@@ -12,6 +12,11 @@ export interface User {
   };
   [key: string]: unknown;
 }
+export interface CurrentSchoolYear {
+  CUR_SCHYR_FROM: number;
+  CUR_SCHYR_TO: number;
+  CUR_SEMESTER: number | string;
+}
 
 // PageProps for usePage<PageProps>()
 export interface PageProps {
@@ -20,6 +25,7 @@ export interface PageProps {
   };
   ziggy: Config & { location: string };
   sidebarOpen: boolean;
+  currentSchoolYear: CurrentSchoolYear | null;
   [key: string]: unknown;
 }
 

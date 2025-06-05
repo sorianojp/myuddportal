@@ -51,9 +51,17 @@ class MyGradeController extends Controller
         $grouped = $allGrades->sortByDesc(function ($g) {
             return $g->SY_FROM . '-' . $g->SY_TO . '-' . $g->SEMESTER;
         })->groupBy(function ($g) {
-            return $g->SY_FROM . '-' . $g->SY_TO . ' - Sem ' . $g->SEMESTER;
+            $semesterName = match ((int)$g->SEMESTER) {
+                1 => '1st Semester',
+                2 => '2nd Semester',
+                0 => 'Summer',
+                default => 'N/A',
+            };
+            return $g->SY_FROM . '-' . $g->SY_TO . ' ' . $semesterName;
         });
+        
 
+        
         return Inertia::render('grades/index', [
             'finalGroupedGrades' => $grouped,
         ]);
