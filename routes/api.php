@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\Api\GradeApiController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -17,3 +18,6 @@ Route::post('/login', function (LoginRequest $request) {
         'user' => Auth::user(),
     ]);
 });
+
+
+Route::get('/grades', [GradeApiController::class, 'index']);
