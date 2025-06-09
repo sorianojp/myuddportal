@@ -12,13 +12,24 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
+use Illuminate\Validation\ValidationException;
+
 Route::post('/login', function (LoginRequest $request) {
-    $request->authenticate();
-    return response()->json([
-        'success' => true,
-        'user' => Auth::user(),
-    ]);
+    try {
+        $request->authenticate();
+
+        return response()->json([
+            'success' => true,
+            'user' => Auth::user(),
+        ]);
+    } catch (ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Invalid credentials. Please check your ID and password.',
+        ], 422);
+    }
 });
+
 
 Route::get('/payments', [PaymentApiController::class, 'index']);
 Route::get('/grades', [GradeApiController::class, 'index']);
