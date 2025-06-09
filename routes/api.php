@@ -6,7 +6,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Api\GradeApiController;
 use App\Http\Controllers\Api\PaymentApiController;
-
+use App\Http\Controllers\Api\ScheduleApiController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -22,3 +22,4 @@ Route::post('/login', function (LoginRequest $request) {
 
 Route::get('/payments', [PaymentApiController::class, 'index']);
 Route::get('/grades', [GradeApiController::class, 'index']);
+Route::get('/schedule', [ScheduleApiController::class, 'index']);
