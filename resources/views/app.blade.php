@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
+    <meta name="google-adsense-account" content="ca-pub-5523564742730054">
     {{-- Inline script to detect system dark mode preference and apply it immediately --}}
     <script>
         (function() {
@@ -44,6 +44,16 @@
 
 <body class="font-sans antialiased">
     @inertia
+
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5523564742730054"
+        crossorigin="anonymous"></script>
+    <!-- Home Ads -->
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-5523564742730054" data-ad-slot="4530657352"
+        data-ad-format="auto" data-full-width-responsive="true"></ins>
+    <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+
 </body>
 
 </html>
